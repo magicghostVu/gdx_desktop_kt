@@ -9,5 +9,5 @@ fun main(vararg args: String) {
     val config = Lwjgl3ApplicationConfiguration()
     config.setForegroundFPS(60)
     config.setTitle("GDX kt")
-    Lwjgl3Application(MyGdxGame())
+    Lwjgl3Application(MyGdxGame(), config)
 }
