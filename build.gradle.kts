@@ -11,6 +11,8 @@ repositories {
     mavenCentral()
 }
 
+val log4jVersion = "2.17.2"
+
 dependencies {
     testImplementation(kotlin("test"))
 
@@ -32,6 +34,8 @@ dependencies {
     // https://mvnrepository.com/artifact/com.badlogicgames.gdx/gdx-platform
     implementation("com.badlogicgames.gdx:gdx-platform:1.11.0:natives-desktop")
 
+    implementation("org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion")
+    implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
 
 
 }

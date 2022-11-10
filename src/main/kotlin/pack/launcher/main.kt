@@ -9,5 +9,6 @@ fun main(vararg args: String) {
     val config = Lwjgl3ApplicationConfiguration()
     config.setForegroundFPS(60)
     config.setTitle("GDX kt")
+    config.setWindowedMode(800,450)
     Lwjgl3Application(MyGdxGame(), config)
 }
