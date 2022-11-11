@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.physics.box2d.*
-import com.badlogic.gdx.physics.box2d.joints.DistanceJointDef
 import com.badlogic.gdx.physics.box2d.joints.RevoluteJointDef
 import com.badlogic.gdx.utils.ScreenUtils
 import org.slf4j.Logger
@@ -58,7 +57,7 @@ class MyGdxGame : ApplicationAdapter() {
         texture = Texture("badlogic.jpg")
 
         camera = OrthographicCamera()
-        camera.setToOrtho(false, 16f, 9f)// tính bằng
+        camera.setToOrtho(false, 20f, 20f)// tính bằng
 
 
         val gravity = Vector2(0f, -9.8f)
@@ -70,7 +69,7 @@ class MyGdxGame : ApplicationAdapter() {
 
         val groundBodyDef = BodyDef()
         groundBodyDef.type = BodyDef.BodyType.StaticBody
-        groundBodyDef.position.set(Vector2(5f, -0.5f))
+        groundBodyDef.position.set(Vector2(0f, 0f))
 
         val groundBody = physicWorld.createBody(groundBodyDef)
 
@@ -102,7 +101,7 @@ class MyGdxGame : ApplicationAdapter() {
 
         val circleBodyDef = BodyDef()
         circleBodyDef.type = BodyDef.BodyType.DynamicBody
-        circleBodyDef.position.set(Vector2(5f, 1f))
+        circleBodyDef.position.set(Vector2(5f, 4f))
         val circleBody = physicWorld.createBody(circleBodyDef)
         circleBody.linearDamping = 0.3f
 
@@ -122,7 +121,7 @@ class MyGdxGame : ApplicationAdapter() {
 
         circleShape.dispose()
 
-        circleBody.linearVelocity = Vector2(0f, 8f)
+        //circleBody.linearVelocity = Vector2(0f, 8f)
 
 
         // tạo thêm box
@@ -151,7 +150,7 @@ class MyGdxGame : ApplicationAdapter() {
 
         //boxBody.fixtureList
 
-        boxBody.worldCenter
+        //boxBody.worldCenter
 
         boxBody.linearVelocity = Vector2(0f, 8f)
         boxBody.angularVelocity = 3.14f // tính theo radian/s
@@ -164,7 +163,7 @@ class MyGdxGame : ApplicationAdapter() {
         distanceJointDef.initialize(
 
         )*/
-        val joinDef = RevoluteJointDef()
+        /*val joinDef = RevoluteJointDef()
 
 
         joinDef.bodyA = boxBody
@@ -179,19 +178,19 @@ class MyGdxGame : ApplicationAdapter() {
 
         physicWorld.contactList
 
-        /*joinDef.lowerAngle = 2 * pi * 0.125f;// 90 độ
+        joinDef.lowerAngle = 2 * pi * 0.125f;// 90 độ
 
-        joinDef.upperAngle = -2 * pi * 0.125f;*/
+        joinDef.upperAngle = -2 * pi * 0.125f;
 
         // bật limmit thì mới có hiệu lực
-        //joinDef.enableLimit = true;
+        joinDef.enableLimit = true;*/
 
-        joinDef.enableMotor = true;
+        /*joinDef.enableMotor = true;
         joinDef.motorSpeed = 0f
-        joinDef.maxMotorTorque = 10f
+        joinDef.maxMotorTorque = 10f*/
 
 
-        physicWorld.createJoint(joinDef)
+        //physicWorld.createJoint(joinDef)
 
 
 
