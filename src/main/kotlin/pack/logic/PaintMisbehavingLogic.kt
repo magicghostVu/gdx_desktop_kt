@@ -19,12 +19,12 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
 
     lateinit var debugRenderer: Box2DDebugRenderer
 
-    private val timeStep = 20L
+    private val timeStep = 0.02f
 
 
     var startTime = System.currentTimeMillis()
 
-    var numTick = 0L
+    private var numTick = 0
 
     private val logger = MLogger.logger
 
@@ -33,6 +33,15 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
     private val allMascot = mutableListOf<Body>()
 
     private var startMascot = false;
+
+    private var stopAll = false;
+
+    private val velocityMascot = 1.7f;
+
+
+    private val numTickMinChangeDirection = 50;
+    private val numTickMaxChangeDirection = 150;
+
 
     override fun create() {
         camera = OrthographicCamera()
@@ -48,16 +57,10 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
         val initPosX = 0.7f
         val distanceBetweenMascot = 0.9f
 
-
-
         repeat(numMascot) {
             val position = Vector2(initPosX + it * distanceBetweenMascot, 2f)
-            allMascot.add(createAMascot(position))
+            allMascot.add(createAMascot(it, position))
         }
-
-        //createAMascot(Vector2(0.8f, 2f))
-
-        //createABullet(Vector2(1f, 1f))*/
     }
 
     // 4 cạnh chặn
@@ -87,15 +90,35 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
         bulletShape.dispose()
     }
 
+    private fun updateMascotDirection() {
+        if (stopAll) return
+        allMascot.forEach {
+            val dataMascot = it.userData as MascotData
+            if (dataMascot.tickWillChangeDirection == numTick) {
+                //eliminateLinearVelocityMascot(it) // coi như v đã bằng 0, tính ra lực mới
+
+                val x = Random.nextDouble(-1.0, 1.0).toFloat()
+                val y = Random.nextDouble(-1.0, 1.0).toFloat()
+                val f = Vector2(x, y)
+                f.nor()
+                f.scl(velocityMascot) // len 2
+                f.scl(it.mass / timeStep)
+                it.applyForceToCenter(f, true)
+
+                val nextTickChangeDirect = getNextTickWillChangeDirection()
+                dataMascot.tickWillChangeDirection = nextTickChangeDirect
+            }
+        }
+    }
 
     // sử dụng cricle cho mascot
     // đường kính 0.8m
-    private fun createAMascot(position: Vector2): Body {
+    private fun createAMascot(id: Int, position: Vector2): Body {
         val mascotBodyDef = BodyDef()
         mascotBodyDef.type = BodyDef.BodyType.DynamicBody
         mascotBodyDef.position.set(position.x, position.y)
         val mascotBody = world.createBody(mascotBodyDef)
-        mascotBody.isFixedRotation = true
+        //mascotBody.isFixedRotation = true
         val mascotShape = CircleShape()
         mascotShape.radius = 0.4f
         val mascotFixtureDef = FixtureDef()
@@ -105,7 +128,18 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
         mascotFixtureDef.restitution = 1f;
         mascotBody.createFixture(mascotFixtureDef)
         mascotShape.dispose()
+
+
+        //
+        //val tickChangeDirect = getNextTickWillChangeDirection()
+        mascotBody.userData = MascotData(id)
+        //logger.info("mascot $id will change direction at $tickChangeDirect")
+
         return mascotBody
+    }
+
+    private fun getNextTickWillChangeDirection(): Int {
+        return Random.nextInt(numTickMinChangeDirection, numTickMaxChangeDirection + 1) + numTick
     }
 
     // chú ý rằng box này có origin tại tâm của box
@@ -131,7 +165,7 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
 
 
         val timeElapsed = System.currentTimeMillis() - startTime
-        val numTickExpected = timeElapsed / timeStep
+        val numTickExpected = timeElapsed / (timeStep * 1000f)
         val numTickWillRun = numTickExpected - numTick
         repeat(numTickWillRun.toInt()) {
             doSimulation()
@@ -143,14 +177,11 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
 
 
     private fun doSimulation() {
-
-
-        // collect input
-
-        // apply input
-
         if (Gdx.input.isKeyPressed(Input.Keys.A)) {
             inputQueue.add(Command.START_RUN_MASCOT)
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
+            inputQueue.add(Command.STOP_ALL_MASCOT)
         }
 
 
@@ -166,6 +197,9 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
                 Command.SPAWN_BULLET -> {
 
                 }
+                Command.STOP_ALL_MASCOT -> {
+                    stopAllMascot()
+                }
             }
         }
 
@@ -173,36 +207,103 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
         // giữ vận tốc
         //random lại hướng sau một thời gian
 
+        //
+
 
         inputQueue.clear()
-        world.step(timeStep / 1000f, 8, 3)
+        world.step(timeStep, 8, 3)
+
+
+        //
+        // tính toán lại hướng
+        updateMascotDirection()
+
+        // keep vận tốc
+        keepVelocity()
+
+
         numTick++
 
-        // post process các event xảy ra sau khi step
+    }
+
+    //private
+
+
+    // add lực nếu như có object nào đó di chuyển chậm hơn
+    private fun keepVelocity() {
+        if (stopAll) return
+        allMascot.forEach {
+            val currentVelocity = it.linearVelocity.cpy()
+            // add thêm lực để fix lại
+            if (currentVelocity.len() != velocityMascot) {
+                val targetVelocity = currentVelocity.cpy().nor()
+                targetVelocity.scl(velocityMascot) // v này sẽ có len bằng 2 và giữ nguyên hướng hiện tại
+                val deltaV = Vector2(
+                    targetVelocity.x - currentVelocity.x,
+                    targetVelocity.y - currentVelocity.y
+                )
+
+                val f = deltaV.scl(it.mass / timeStep)
+                it.applyForceToCenter(f, true)
+            }
+        }
+    }
+
+    private fun stopAllMascot() {
+        if (stopAll) return
+        stopAll = true;
+        logger.info("stop all")
+        // dùng add force để triệt tiêu tất cả vận tốc của các body
+        allMascot.forEach {
+            eliminateLinearVelocityMascot(it)
+        }
+    }
+
+    private fun eliminateLinearVelocityMascot(mascotBody: Body): Unit {
+        val currentVelocity = mascotBody.linearVelocity
+        if (currentVelocity.len() == 0.0f) {
+            return
+        }
+        // lấy ngược lại
+        val vToAdd = Vector2(-currentVelocity.x, -currentVelocity.y)
+        val r = mascotBody.mass / (timeStep)
+        val f = vToAdd.scl(r)
+        mascotBody.applyForceToCenter(f, true)
     }
 
     private fun runAllMascot() {
-
-        // vận tốc cố định 3m/s nhưng hướng khác nhau
+        // vận tốc cố định 2m/s nhưng hướng khác nhau
         // cần tính toán lại
-        val v = 2.0f
         allMascot.forEach {
-            val x = Random.nextFloat()
-            val y = Random.nextFloat()
-            val direction = Vector2(x, y)
-            direction.nor()
-            direction.scl(v)
-            it.applyLinearImpulse(direction, it.transform.position, true)
-        }
+            var x = Random.nextFloat()
+            var y = Random.nextFloat()
 
+            if (x < 0.5f) {
+                x = -x
+            }
+
+            if (y < 0.5f) {
+                y = -y;
+            }
+            val force = Vector2(x, y)
+            force.nor() // normalize
+            force.scl(velocityMascot) // v len sẽ bằng 2
+            val rate = it.mass / (timeStep)
+            force.scl(rate)
+            it.applyForceToCenter(force, true)
+
+            val mascotData = it.userData as MascotData
+            mascotData.tickWillChangeDirection = getNextTickWillChangeDirection()
+        }
         logger.info("run all mascot")
     }
+
 
     override fun dispose() {
         world.dispose()
     }
 
     companion object {
-        val numMascot: Int = 6
+        val numMascot: Int = 8
     }
 }
