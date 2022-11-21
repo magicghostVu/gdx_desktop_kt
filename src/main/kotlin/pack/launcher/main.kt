@@ -7,8 +7,8 @@ import pack.logic.PaintMisbehavingLogic
 
 fun main(vararg args: String) {
     val config = Lwjgl3ApplicationConfiguration()
-    config.setForegroundFPS(60)
+    config.setForegroundFPS(50)
     config.setTitle("GDX kt")
-    config.setWindowedMode(900, 900)
+    config.setWindowedMode(500, 500)
     Lwjgl3Application(PaintMisbehavingLogic(), config)
 }
