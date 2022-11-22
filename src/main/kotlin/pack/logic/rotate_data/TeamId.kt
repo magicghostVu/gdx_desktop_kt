@@ -1,4 +1,4 @@
-package pack.logic.team_id
+package pack.logic.rotate_data
 
 
 enum class TeamId(val startAngle: Float) {
@@ -32,18 +32,27 @@ enum class TeamId(val startAngle: Float) {
             return AngleConstrain(ConstrainsType.NOT_BIGGER_THAN, -30f)
         }
     },
-    DOWN(1.5708f) { //bắt đầu 90 độ
+    DOWN(1.5708f) { //bắt đầu ở 90 độ
         override fun constrainCW(): AngleConstrain {
-            return AngleConstrain(ConstrainsType.NOT_SMALLER_THAN, degreeToRad(30f))
+            return AngleConstrain(ConstrainsType.NOT_SMALLER_THAN, degreeToRad(0f))
         }
 
         override fun constrainCCW(): AngleConstrain {
-            return AngleConstrain(ConstrainsType.NOT_BIGGER_THAN, degreeToRad(150f))
+            return AngleConstrain(ConstrainsType.NOT_BIGGER_THAN, degreeToRad(180f))
         }
     };
 
     abstract fun constrainCW(): AngleConstrain
     abstract fun constrainCCW(): AngleConstrain
+
+
+    fun angleValid(angle: Float, previousVelocity: Float): Boolean {
+        return if (previousVelocity > 0) {
+            constrainCCW().valueSatisfy(angle)
+        } else {
+            constrainCW().valueSatisfy(angle)
+        }
+    }
 
     companion object {
         private val piFloat = Math.PI.toFloat()

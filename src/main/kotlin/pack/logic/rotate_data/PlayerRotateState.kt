@@ -1,4 +1,4 @@
-package pack.logic.team_id
+package pack.logic.rotate_data
 
 enum class PlayerRotateState {
     NORMAL {

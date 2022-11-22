@@ -10,9 +10,8 @@ import com.badlogic.gdx.utils.ScreenUtils
 import pack.logger.MLogger
 import pack.logic.collision_filter.MyCategory
 import pack.logic.contact_listener.MContactListener
-import pack.logic.team_id.PlayerRotateData
-import pack.logic.team_id.PlayerRotateState
-import pack.logic.team_id.TeamId
+import pack.logic.rotate_data.PlayerRotateData
+import pack.logic.rotate_data.TeamId
 import kotlin.math.abs
 import kotlin.math.tan
 import kotlin.random.Random
@@ -278,7 +277,7 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
     }
 
 
-    val maxAngularVelocity = Math.PI.toFloat()  // 180 độ mỗi s
+    private val maxAngularVelocity = Math.PI.toFloat() * 1.4f  // 180*1.4 độ mỗi s
 
     private fun doSimulation() {
         if (Gdx.input.isKeyPressed(Input.Keys.A)) {
@@ -341,51 +340,22 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
         }
 
 
-        // bỏ lực nếu góc chạm ngưỡng trong frame tiếp theo
+        val playerData = playerBody.userData as PlayerRotateData
 
 
-        val rotateData = playerBody.userData as PlayerRotateData
-
-
-        val teamId = rotateData.teamId
-
-        val currentVeloAngle = playerBody.angularVelocity
-
-        var angleAfterThisFrame = playerBody.angle + currentVeloAngle * timeStep
-
-        angleAfterThisFrame = normalAngle(angleAfterThisFrame)
-
-        val valueValid = if (currentVeloAngle > 0) {
-            teamId.constrainCCW().valueSatisfy(angleAfterThisFrame)
-        } else {
-            teamId.constrainCW().valueSatisfy(angleAfterThisFrame)
-        }
-
-        // nếu value này không thoả thì set sang reached một trong 2 trạng thái
-
-        // nếu value thoả thì set về normal
-
-        // update state rotate
-        if (currentVeloAngle != 0f) {
-            if (!valueValid) {
-                if (currentVeloAngle >= 0) {
-                    rotateData.rotateState = PlayerRotateState.REACHED_CCW_LIMIT
-                } else {
-                    rotateData.rotateState = PlayerRotateState.REACHED_CW_LIMIT
-                }
-            } else {
-                rotateData.rotateState = PlayerRotateState.NORMAL
-            }
+        // frame trước có xoay
+        // cập nhật trạng thái xoay
+        if (playerData.previousAngularVelocity != 0f) {
+            playerData.updateState(playerBody.angle)
         }
 
 
-        // keep velocity
-
-
-        val acceptTorque = rotateData.rotateState.acceptTorque(torqueApplied)
-        if (acceptTorque && torqueApplied != 0f && abs(playerBody.angularVelocity) < maxAngularVelocity) {
+        val acceptTorque = playerData.rotateState.acceptTorque(torqueApplied)
+        if (acceptTorque
+            && torqueApplied != 0f
+            && abs(playerBody.angularVelocity) < maxAngularVelocity
+        ) {
             playerBody.applyTorque(torqueApplied, true)
-            //logger.info("apply torque, state is ${rotateData.rotateState}, torque $torqueApplied")
         }
 
 
@@ -398,6 +368,7 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
         // post process
 
         // thử xoá các viên đạn ra khỏi map
+        //
         val iter = allBullets.iterator()
         var someDeleted = false
         while (iter.hasNext()) {
@@ -421,7 +392,8 @@ class PaintMisbehavingLogic() : ApplicationAdapter() {
         keepVelocity()
 
 
-
+        // update previous angular velocity
+        playerData.previousAngularVelocity = playerBody.angularVelocity
 
 
         numTick++

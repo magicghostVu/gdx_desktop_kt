@@ -12,7 +12,7 @@ class MContactListener : ContactListener {
     private val logger = MLogger.logger
 
     override fun beginContact(contact: Contact) {
-        logger.info("begin contact")
+        //logger.info("begin contact")
     }
 
     override fun endContact(contact: Contact) {
